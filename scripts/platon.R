@@ -1,0 +1,53 @@
+
+
+# including necessary libraries -------------------------------------------
+
+library('dplyr')
+library('jsonlite')
+library('Hmisc')
+library('openxlsx')
+
+# importing data sets - original Platon, JSON Platon and converting --------
+
+sample_original <-
+  read.xlsx("data/platon_original_E_Cash_dataset.xlsx", colNames = TRUE)
+
+platon_data <-
+  jsonlite::fromJSON("data/platon.json", flatten = TRUE)
+
+row_data_1 <- do.call(rbind, platon_data$data)
+
+row_data <-
+  left_join(row_data_1,
+            sample_original,
+            by = c("rc_token", "rc_id", "credit_date"))
+
+rating_mark <-
+  function(x) {
+    ifelse(x < 4, "A", ifelse(x >= 4 &
+                                x < 10, "B", ifelse(x >= 10 &
+                                                      x < 20, "C", "D")))
+  } #have just introduced credit rating marks based on dpd
+
+row_data <-
+  row_data %>% transform(
+    payer_identification_accuracy_level = as.numeric(payer_identification_accuracy_level),
+    payer_relation_time = as.numeric(payer_relation_time),
+    last_credit_transaction = as.numeric(last_credit_transaction),
+    last_debit_transaction = as.numeric(last_debit_transaction),
+    payer_credit_frequency = as.numeric(payer_credit_frequency),
+    payer_debit_frequency = as.numeric(payer_debit_frequency),
+    payer_credit_average_sum = as.numeric(payer_credit_average_sum),
+    payer_debit_average_sum = as.numeric(payer_debit_average_sum),
+    payer_av_credit_min_sum = as.numeric(payer_av_credit_min_sum),
+    payer_av_credit_max_sum = as.numeric(payer_av_credit_max_sum),
+    payer_qty_of_companies = as.numeric(payer_qty_of_companies)
+  )
+
+
+
+# first look on features --------------------------------------------------
+
+library('pastecs')
+stat.desc(row_data)
+describe(row_data)
